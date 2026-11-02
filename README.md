@@ -181,14 +181,14 @@ interface SeenEntry {
 ```ts
 await ctx['miyako-delivery'].deliver({
   target: { kind: 'album', channelId: 'onebot:854365377', albumId: 'a1' }, // albumName 可省
-  elements: [h('image', { src: 'base64://...' })],
+  elements: [h('image', { src: imageBuffer })],
   scope: 'intel:album',
   dedupeKey: digest,
 })
 ```
 
 - **仅接受 `image` 元素**（文本等一律 `INVALID_PAYLOAD`）。
-- `src` 支持 `Buffer`、`base64://`、`data:`、`http(s)://`（后者用全局 `fetch` 取 arraybuffer 后转 base64）。
+- `src` 支持 `Buffer`、`data:`、`http(s)://`（后者用全局 `fetch` 取 arraybuffer 后转 base64）；`base64://` 仍然接受，但 Koishi 的 `h.image('base64://…')` 会打印弃用警告，新建消息请用 `Buffer` 或 `data:`。
 - `albumName` 缺省时调用 `get_qun_album_list`（携带上一页 `attach_info` 翻页，最多 5 页）匹配 `album_id`，取 `name` / `album_name`；找不到 → `TARGET_NOT_FOUND`。
 - 逐张调用 `upload_image_to_qun_album({ group_id, album_id, album_name, file: 'base64://…' })`；`retcode !== 0` → `ALBUM_UPLOAD_FAILED`（`retcode` 为 1200/429 时可重试）。
 - `bot.internal._get` 缺失 → `ADAPTER_ERROR`（不可重试）。

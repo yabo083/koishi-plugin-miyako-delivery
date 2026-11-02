@@ -51,8 +51,14 @@ function createContext(bots) {
   return ctx
 }
 
-function createService({ path, bots = [], config = {}, deps = {} }) {
-  return new DeliveryService(createContext(bots), { storePath: path, ...config }, {
+function createService({ path, bots = [], config = {}, deps = {}, quiet = false }) {
+  const ctx = createContext(bots)
+  if (quiet) {
+    // 预期内的 warn（损坏隔离等）不打印到测试输出
+    const silent = new Proxy({}, { get: () => () => {} })
+    Object.defineProperty(ctx, 'logger', { value: () => silent, configurable: true })
+  }
+  return new DeliveryService(ctx, { storePath: path, ...config }, {
     sleep: async () => {},
     ...deps,
   })
@@ -329,7 +335,7 @@ test('群相册：反查 albumName 并以 base64:// 上传（兼容 h.image 的 
   // Koishi `h.image()` 产出 `img` 元素，不是 `image`；必须同样接受。
   const viaHImage = await service.deliver({
     target: { kind: 'album', channelId: 'onebot:854365377', albumId: 'a1', albumName: '相册一' },
-    elements: [h.image('base64://R0hJ')],
+    elements: [h.image('data:image/png;base64,R0hJ')],
   })
   assert.equal(viaHImage.ok, true)
   assert.equal(internalCalls.filter((call) => call.action === 'upload_image_to_qun_album').length, 3)
@@ -446,7 +452,7 @@ test('损坏的状态文件被隔离并以空库启动', async (t) => {
   await writeFile(path, '{ not json', 'utf8')
 
   const bot = createBot()
-  const service = createService({ path, bots: [bot] })
+  const service = createService({ path, bots: [bot], quiet: true })
   const outcome = await service.deliver({
     target: { channelId: 'onebot:123' },
     elements: [text('a')],
