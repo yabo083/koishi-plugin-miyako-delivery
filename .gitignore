@@ -1,0 +1,9 @@
+node_modules/
+lib/
+tmp/
+*.tsbuildinfo
+*.tgz
+npm-debug.log*
+.pnpm-store/
+.env
+.env.*
