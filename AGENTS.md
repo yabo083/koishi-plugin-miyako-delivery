@@ -94,10 +94,11 @@ export interface NotifierService extends Service {
 - 每条新条目 × 目标一项 `broadcast`（`scope=feed:<栏目>`、`dedupeKey=<链接>`、365 天窗口）；首启 `hasHistory` + `markSeen` 播种，无目标不播种（防倒灌）。
 - 逐目标 `isSeen` 过滤，部分失败只重推未送达目标。
 
-### 5.2 `miyako-intel`（可选依赖）
-- 日切水位：`gateDailySlot(slot, dayKey)` 服务缺失时退回进程内 Map；claim-first，失败当天不重跑。
-- 日报群发：`broadcast`（`scope=miyako-intel:daily`、`dedupeKey=dayKey`），缺失时 `ctx.broadcast`。
-- 周报相册：`kind:'album'` 目标，缺失时退回 OneBot 直传。
+### 5.2 `miyako-intel`（硬依赖，>= 0.3.0）
+- 调度：五个周期任务全部 `scheduleCron(expr, run, { timeZone: 'Asia/Shanghai' })`；插件不再持有 cron 解析与轮询。
+- 日切水位：`gateDailySlot(slot, dayKey)` claim-first，失败当天不重跑。
+- 日报群发：`broadcast`（`scope=miyako-intel:daily`、`dedupeKey=dayKey`）。
+- 周报相册：`kind:'album'` 目标。
 
 ### 5.3 `patchouli-knowledge`（可选依赖）
 - 频道/相册走 `deliver`；缺失时频道降级 `bot.sendMessage`、相册结构化失败；知识周报 `scheduleCron('30 4 * * 1')`。

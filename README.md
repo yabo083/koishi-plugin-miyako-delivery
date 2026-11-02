@@ -290,7 +290,7 @@ mise exec -- pnpm test    # node --test "tests/**/*.test.mjs"（Node 自带 glob
 | 消费者 | 接入方式 | 迁掉的旧实现 |
 | :--- | :--- | :--- |
 | `miyako-feed` | **硬依赖** `inject = ['miyako-delivery']`；每栏目 `scheduleCron(column.cron)`；每条新条目 × 目标一项 `broadcast`（`scope=feed:<栏目>`、`dedupeKey=<链接>`、365 天窗口）；首启用 `hasHistory` + `markSeen` 播种，无目标不播种。 | `src/state.ts`（JSON 游标 + 1 秒 debounce）、`src/cron.ts`（自行 cron 匹配）、每分钟轮询与 `bot.sendMessage` |
-| `miyako-intel` | **可选依赖** `inject.optional`；日切水位走 `gateDailySlot`（缺失时退回进程内 Map）；日报群发走 `broadcast`（`scope=miyako-intel:daily`、`dedupeKey=dayKey`）；周报相册走 `kind:'album'` 目标（缺失时退回 OneBot 直传）。 | 内存态 `DailyCronGate.lastRun`、`ctx.broadcast` 群发、`upload_image_to_qun_album` 直调 |
+| `miyako-intel` | **硬依赖**（>= 0.3.0）；刷新/推送/缓存维护/剧情更新/周报五个周期任务全部 `scheduleCron(expr, run, { timeZone: 'Asia/Shanghai' })`；日切水位走 `gateDailySlot`；日报群发走 `broadcast`（`scope=miyako-intel:daily`、`dedupeKey=dayKey`）；周报相册走 `kind:'album'` 目标。 | 整数 cron 解析（`src/core/cron.ts`）、每分钟轮询、内存态 `DailyCronGate`、`ctx.broadcast` 群发、`upload_image_to_qun_album` 直调 |
 | `patchouli-knowledge` | **可选依赖**；频道/相册投递走 `deliver`，缺失时频道目标降级 `bot.sendMessage`、相册目标结构化失败；每周知识周报用 `scheduleCron('30 4 * * 1')`。 | 自带相册上传与频道广播、`WeeklyAlbumScheduler` |
 
 接入不变量：
