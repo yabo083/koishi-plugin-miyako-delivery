@@ -297,3 +297,5 @@ mise exec -- pnpm test    # node --test "tests/**/*.test.mjs"（Node 自带 glob
 - 业务插件不自己发消息、不自己判重、不自己计时（`scheduleCron` / `gateDailySlot` 都在本服务）；
 - 投递失败按目标独立返回，业务插件只负责把 `error.code/message` 写日志或回给命令；
 - 日切类任务采用 claim-first（先占水位再执行）——崩溃或失败当天不重跑，宁可少发一次。
+
+<!-- superagent smoke test -->
