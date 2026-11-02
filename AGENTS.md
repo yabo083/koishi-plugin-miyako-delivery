@@ -69,7 +69,7 @@ export interface NotifierService extends Service {
   markSeen(entries: readonly SeenEntry[]): Promise<void>; // 播种/迁移，只落盘不发送
   hasHistory(scope: string): Promise<boolean>;            // 首启判定
   listAlbums(groupId: string): Promise<AlbumInfo[]>;
-  scheduleCron(expression: string, run: () => void | Promise<void>): () => void;
+  scheduleCron(expression: string, run: () => void | Promise<void>, options?: { timeZone?: string }): () => void;
   gateDailySlot(slot: string, dayKey: string): Promise<boolean>;
 }
 ```

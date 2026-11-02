@@ -1,6 +1,6 @@
 {
   "name": "koishi-plugin-miyako-delivery",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Miyako 系列共通消息投递与可靠性治理服务（幂等去重、错误退避、静默控制、群相册与目标归一）",
   "author": "miyako",
   "license": "MIT",

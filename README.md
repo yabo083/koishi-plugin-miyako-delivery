@@ -136,7 +136,11 @@ interface NotifierService extends Service {
   /** scope 内是否已有任一记录（判断是否首次运行） */
   hasHistory(scope: string): Promise<boolean>;
   listAlbums(groupId: string): Promise<AlbumInfo[]>;
-  scheduleCron(expression: string, run: () => void | Promise<void>): () => void;
+  scheduleCron(
+    expression: string,
+    run: () => void | Promise<void>,
+    options?: { timeZone?: string },   // IANA 时区；缺省宿主本地
+  ): () => void;
   gateDailySlot(slot: string, dayKey: string): Promise<boolean>;
 }
 
@@ -148,6 +152,8 @@ interface SeenEntry {
 ```
 
 `DeliveryErrorCode`：`TARGET_NOT_FOUND` | `BOT_OFFLINE` | `INVALID_PAYLOAD` | `RATE_LIMITED` | `NETWORK_TIMEOUT` | `ADAPTER_ERROR` | `ALBUM_UPLOAD_FAILED`，每个错误都带 `retryable` 结论。
+
+`scheduleCron` 的 `timeZone` 决定表达式按哪个时区的日历展开：不传按宿主本地时区（旧行为），传 `Asia/Shanghai` 则固定东八区，宿主换时区也不漂；按月/日/时整段跳过查找，`@yearly` 级表达式也不会逐分钟扫一年。
 
 ---
 

@@ -60,6 +60,12 @@ export interface Delivery {
   };
 }
 
+/** `scheduleCron` 的可选参数 */
+export interface ScheduleCronOptions {
+  /** IANA 时区（如 `Asia/Shanghai`）；缺省按宿主本地时区计算 */
+  timeZone?: string;
+}
+
 /** 预置已投递记录（首启播种 / 从旧游标迁移）：只落盘，不发送 */
 export interface SeenEntry {
   target: DeliveryTarget;
@@ -161,8 +167,8 @@ export interface NotifierService extends Service {
   /** 探测指定群已存在的相册，供控制台动态下拉使用。 */
   listAlbums(groupId: string): Promise<AlbumInfo[]>;
 
-  /** 注册一个本地 cron 定时任务（五段表达式），返回停止函数。 */
-  scheduleCron(expression: string, run: () => void | Promise<void>): () => void;
+  /** 注册一个 cron 定时任务（五段表达式），可指定 IANA 时区；返回停止函数。 */
+  scheduleCron(expression: string, run: () => void | Promise<void>, options?: ScheduleCronOptions): () => void;
 
   /**
    * 记录日切水位标记（持久化替代脆弱的内存 Map）。

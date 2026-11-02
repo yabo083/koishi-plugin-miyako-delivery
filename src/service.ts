@@ -15,6 +15,7 @@ import type {
   DeliveryTarget,
   NotifierConfig,
   NotifierService,
+  ScheduleCronOptions,
   SeenEntry,
 } from './types';
 
@@ -66,14 +67,21 @@ export class DeliveryService extends Service implements NotifierService {
     });
   }
 
-  scheduleCron(expression: string, run: () => void | Promise<void>): () => void {
+  scheduleCron(
+    expression: string,
+    run: () => void | Promise<void>,
+    options: ScheduleCronOptions = {},
+  ): () => void {
     const fields = parseCron(expression);
+    const { timeZone } = options;
     let disposed = false;
     let timer: NodeJS.Timeout | undefined;
     const schedule = (): void => {
       if (disposed) return;
       const now = this.deps.now?.() ?? Date.now();
-      const delay = Math.max(1_000, nextCronAt(fields, now) - now);
+      const next = nextCronAt(fields, now, timeZone);
+      this.log.debug('cron %s（%s）下次触发 %s', expression, timeZone ?? 'local', new Date(next).toISOString());
+      const delay = Math.max(1_000, next - now);
       timer = setTimeout(() => {
         if (timer !== undefined) this.cronTimers.delete(timer);
         void (async () => {
