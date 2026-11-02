@@ -34,3 +34,16 @@ test('CRON-05: 跨时区与宿主本地时区可不同', () => {
   // 同样的表达式在 Asia/Shanghai 是 01:00Z
   assert.equal(nextCronAt('0 9 * * *', utc(2026, 11, 2, 0, 0), 'Asia/Shanghai'), utc(2026, 11, 2, 1, 0))
 })
+
+test('CRON-06: 带时区路径对不可达表达式按时间窗兜底', () => {
+  assert.throws(
+    () => nextCronAt('0 0 31 2 *', utc(2026, 1, 1, 0, 0), 'Asia/Shanghai'),
+    /一年内没有匹配时刻/,
+  )
+})
+
+test('CRON-07: 跨年与非法时区', () => {
+  // 2026-12-31 23:00Z = 2027-01-01 07:00 CST 前，下一个本地 1 月 1 日 00:00 = 12-31 16:00Z
+  assert.equal(nextCronAt('0 0 1 1 *', utc(2026, 12, 31, 0, 0), 'Asia/Shanghai'), utc(2026, 12, 31, 16, 0))
+  assert.throws(() => nextCronAt('* * * * *', utc(2026, 1, 1, 0, 0), 'Not/AZone'), /Invalid time zone|time zone/i)
+})

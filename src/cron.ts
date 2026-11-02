@@ -177,7 +177,11 @@ export function nextCronAt(expression: string | CronFields, from: number, timeZo
 /** 指定时区的查找：按月/日/时整段跳过，避免逐分钟扫一年 */
 function nextCronAtInZone(fields: CronFields, from: number, timeZone: string): number {
   let cursor = Math.floor(from / MINUTE) * MINUTE + MINUTE;
+  const horizon = from + MAX_SCAN_MINUTES * MINUTE;
   for (let index = 0; index < MAX_SCAN_MINUTES; index += 1) {
+    // 不可达表达式（如 2 月 31 日）靠整段跳转时迭代次数远小于分钟数，
+    // 因此用「扫描时间窗」而不是迭代次数兜底，避免带时区路径长时间空转
+    if (cursor > horizon) break;
     const clock = zonedClock(cursor, timeZone);
     let next: number;
     if (!fields.month.has(clock.month)) {

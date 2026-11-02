@@ -25,6 +25,8 @@ export const DEFAULT_STORE_PATH = 'data/miyako-delivery/store.json';
 export const DEFAULT_DEDUPE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_BACKOFF_MS = 1000;
+/** setTimeout 的上限约 24.8 天：更远的触发点要分段唤醒，否则 Node 会把延迟改成 1ms 空转 */
+const MAX_TIMER_DELAY = 2_147_000_000;
 
 /** 可注入依赖：测试用假时钟/假休眠/假 Bot；宿主也可显式指定 Bot 集合 */
 export interface DeliveryServiceDeps {
@@ -81,9 +83,15 @@ export class DeliveryService extends Service implements NotifierService {
       const now = this.deps.now?.() ?? Date.now();
       const next = nextCronAt(fields, now, timeZone);
       this.log.debug('cron %s（%s）下次触发 %s', expression, timeZone ?? 'local', new Date(next).toISOString());
-      const delay = Math.max(1_000, next - now);
+      const delay = Math.max(1_000, Math.min(next - now, MAX_TIMER_DELAY));
       timer = setTimeout(() => {
         if (timer !== undefined) this.cronTimers.delete(timer);
+        const current = this.deps.now?.() ?? Date.now();
+        if (current < next) {
+          // 超长等待分段唤醒：还没到点就重新计算（通常还是同一个 next）
+          schedule();
+          return;
+        }
         void (async () => {
           try {
             await run();
