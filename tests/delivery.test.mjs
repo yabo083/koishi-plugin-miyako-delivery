@@ -622,3 +622,37 @@ test('长窗口记录跨进程重启仍按自己的窗口保留（markSeen 同�
   const fourth = create()
   assert.equal(await fourth.isSeen('feed:news', 'link-seeded'), false)
 })
+
+test('隐藏 Bot（chatluna-sandbox 模拟实例）不参与投递，也不参与相册探测', async (t) => {
+  const { path } = await createStorePath(t)
+  const hiddenCalls = []
+  const hidden = {
+    ...createBot(),
+    hidden: true,
+    internal: {
+      async _get(action) {
+        hiddenCalls.push(action)
+        throw new Error(`NapCat 基线不支持 OneBot action：${action}`)
+      },
+    },
+  }
+  const realBot = createBot({
+    internal: {
+      async _get(action) {
+        if (action === 'get_qun_album_list') return { retcode: 0, data: { album_list: [{ album_id: 'a1', album_name: '相册一' }] } }
+        if (action === 'get_group_info') return { retcode: 0, data: { group_name: '群一' } }
+        throw new Error(`未知接口 ${action}`)
+      },
+    },
+  })
+  const service = createService({ path, bots: [hidden, realBot] })
+
+  const outcome = await service.deliver({ target: { channelId: 'onebot:854365377' }, elements: [text('a')] })
+  assert.equal(outcome.ok, true)
+  assert.equal(hidden.calls.length, 0, '隐藏 Bot 不得收到真实投递')
+  assert.equal(realBot.calls.length, 1)
+
+  const albums = await service.listAlbums('854365377')
+  assert.deepEqual(albums.map((album) => album.albumId), ['a1'])
+  assert.deepEqual(hiddenCalls, [], '隐藏 Bot 一次动作都不能被调用')
+})

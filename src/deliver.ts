@@ -115,11 +115,13 @@ export interface DeliveryBot {
   /** 可选：构造发送会话（官方 QQ Bot 的私聊需要 DIRECT 会话才能主动发） */
   session?(options: unknown): unknown;
   internal?: unknown;
+  /** 隐藏 Bot（`chatluna-sandbox` 之类模拟/镜像实例）：不参与真实投递，也不参与相册探测 */
+  hidden?: boolean;
 }
 
-/** 按 platform 取 Bot；缺失即 `BOT_OFFLINE`（不可重试） */
+/** 按 platform 取 Bot；缺失即 `BOT_OFFLINE`（不可重试）。隐藏 Bot 不参与真实投递。 */
 export function resolveBot(bots: readonly DeliveryBot[], platform: string): DeliveryBot {
-  const bot = bots.find((candidate) => candidate.platform === platform);
+  const bot = bots.find((candidate) => candidate.platform === platform && candidate.hidden !== true);
   if (!bot) throw failure('BOT_OFFLINE', `没有可用的 ${platform} Bot`, false);
   return bot;
 }
@@ -235,7 +237,7 @@ export async function listGroupAlbums(
   platform: string,
   groupId: string,
 ): Promise<AlbumInfo[]> {
-  const candidates = bots.filter((bot) => bot.platform === platform);
+  const candidates = bots.filter((bot) => bot.platform === platform && bot.hidden !== true);
   for (const bot of candidates) {
     const internal = bot.internal;
     if (!isRecord(internal) || typeof internal._get !== 'function') continue;

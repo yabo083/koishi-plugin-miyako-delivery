@@ -198,6 +198,7 @@ await ctx['miyako-delivery'].deliver({
 - `albumName` 缺省时调用 `get_qun_album_list`（携带上一页 `attach_info` 翻页，最多 5 页）匹配 `album_id`，取 `name` / `album_name`；找不到 → `TARGET_NOT_FOUND`。
 - 逐张调用 `upload_image_to_qun_album({ group_id, album_id, album_name, file: 'base64://…' })`；`retcode !== 0` → `ALBUM_UPLOAD_FAILED`（`retcode` 为 1200/429 时可重试）。
 - `bot.internal._get` 缺失 → `ADAPTER_ERROR`（不可重试）。
+- **隐藏 Bot 不参与**：`bot.hidden === true`（`chatluna-sandbox` 之类模拟实例）在 `resolveBot` 与 `listAlbums` 里都被跳过——它的 `internal` 是个 Proxy，任何动作都返回「NapCat 基线不支持 OneBot action」，既拿不到相册也发不出真消息。
 - 相册没有单条消息 ID，`messageId` 为空。
 
 > 已知风险：重试是**目标级**的。若相册内第 2 张上传失败触发重试，第 1 张会被再传一次（相册里出现重复图）。需要严格去重时请让调用方一次只投递一张。
@@ -277,7 +278,7 @@ mise exec -- pnpm test    # node --test "tests/**/*.test.mjs"（Node 自带 glob
 
 > Node 22 的 `node --test <dir>` 仍然把目录当作模块路径（`Cannot find module ...\tests`），所以脚本用**带引号的 glob**，由 Node 自己展开，Windows / POSIX 一致。
 
-测试全部使用 mock ctx / bot，不连接真实 QQ：`tests/delivery.test.mjs`（23 项）覆盖跨实例去重、崩溃残留 `pending`、部分失败隔离、不可重试只试一次、`silent` 剥离、相册参数、`gateDailySlot` 持久化、静默时段、`broadcast` 汇总、损坏文件隔离、服务名注册，以及本轮新增的 `markSeen`/`hasHistory`/按目标 `isSeen`、长去重窗口跨重启保留、官方 QQ 私聊 DIRECT 会话；`tests/cron.test.mjs`（7 项）覆盖五段 cron 解析、IANA 时区（含跨年/非法时区）与不可达表达式兜底。状态文件写入项目 `tmp/` 下并在用例结束时清除。
+测试全部使用 mock ctx / bot，不连接真实 QQ：`tests/delivery.test.mjs`（24 项）覆盖跨实例去重、崩溃残留 `pending`、部分失败隔离、不可重试只试一次、`silent` 剥离、相册参数、`gateDailySlot` 持久化、静默时段、`broadcast` 汇总、损坏文件隔离、服务名注册，以及本轮新增的 `markSeen`/`hasHistory`/按目标 `isSeen`、长去重窗口跨重启保留、官方 QQ 私聊 DIRECT 会话、隐藏 Bot 跳过；`tests/cron.test.mjs`（7 项）覆盖五段 cron 解析、IANA 时区（含跨年/非法时区）与不可达表达式兜底。状态文件写入项目 `tmp/` 下并在用例结束时清除。
 
 因为 koishi 的 ESM 入口在 pnpm 布局下与 cordis 的双包互操作有缺陷，`.mjs` 测试统一通过 `createRequire` 加载 koishi 的 CJS 入口。
 
